@@ -29,6 +29,33 @@
     });
   }
 
+  // Ask the overlay on the current tab what it is doing.
+  const describe = (r) => {
+    switch (r.state) {
+      case 'drawing':
+        return `Overlay active (zoom ${r.zoom}, ${r.polygons.toLocaleString()} polygons loaded, ${r.canvas}px, in <${r.host}>${r.ms != null ? ', ' + r.ms + ' ms' : ''}).`;
+      case 'disabled': return 'Overlay is switched off (tick “Overlay on”).';
+      case 'no-view': return 'Overlay is waiting: no x/y/z found in the page address. Move the map a little.';
+      case 'error': return 'Overlay error: ' + r.error;
+      default: return 'Overlay is starting…';
+    }
+  };
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs && tabs[0];
+    if (!tab) return;
+    chrome.tabs.sendMessage(tab.id, { type: 'sq-status' }, (r) => {
+      if (chrome.runtime.lastError || !r) {
+        $('status').textContent = 'No overlay on this tab. Open mapy.com and reload the page.';
+      } else {
+        $('status').textContent = describe(r);
+      }
+    });
+  });
+
+  $('reset').addEventListener('click', () => {
+    chrome.storage.local.remove('settings', () => window.close());
+  });
+
   $('open').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
     window.close();

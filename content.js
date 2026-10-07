@@ -20,6 +20,26 @@
 
   const DEFAULTS = G.DEFAULTS;
 
+  const num = (v, d, lo, hi) => {
+    v = Number(v);
+    if (!Number.isFinite(v)) return d;
+    return Math.min(hi, Math.max(lo, v));
+  };
+  // Never let a malformed stored value switch the overlay off silently.
+  function sanitize(raw) {
+    const s = Object.assign({}, DEFAULTS, raw || {});
+    s.fillOpacity = num(s.fillOpacity, DEFAULTS.fillOpacity, 0.05, 1);
+    s.lineOpacity = num(s.lineOpacity, DEFAULTS.lineOpacity, 0.05, 1);
+    s.zoomOffset = num(s.zoomOffset, 0, -5, 5);
+    s.offsetX = num(s.offsetX, 0, -2000, 2000);
+    s.offsetY = num(s.offsetY, 0, -2000, 2000);
+    for (const k of ['gridColorA', 'gridColorB', 'fillColorA', 'fillColorB']) {
+      if (typeof s[k] !== 'string' || !/^#[0-9a-f]{3,8}$/i.test(s[k])) s[k] = DEFAULTS[k];
+    }
+    return s;
+  }
+
+  let status = { state: 'starting' };
   let settings = Object.assign({}, DEFAULTS);
   let polys = []; // prepared polygons
   let canvas = null;
@@ -32,7 +52,7 @@
 
   function loadAll(cb) {
     chrome.storage.local.get(['settings', 'visited'], (res) => {
-      settings = Object.assign({}, DEFAULTS, res.settings || {});
+      settings = sanitize(res.settings);
       polys = res.visited && res.visited.polys ? G.prepare(res.visited.polys) : [];
       cb && cb();
     });
@@ -40,7 +60,7 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
-    if (changes.settings) settings = Object.assign({}, DEFAULTS, changes.settings.newValue || {});
+    if (changes.settings) settings = sanitize(changes.settings.newValue);
     if (changes.visited) {
       const v = changes.visited.newValue;
       polys = v && v.polys ? G.prepare(v.polys) : [];
@@ -113,8 +133,28 @@
 
   function draw() {
     rafId = 0;
-    const view = settings.enabled ? readView() : null;
-    if (!view) return hideCanvas();
+    const t0 = performance.now();
+    try {
+      drawInner();
+      if (status.state === 'drawing') status.ms = Math.round(performance.now() - t0);
+    } catch (e) {
+      status = { state: 'error', error: String((e && e.message) || e) };
+      console.error('[Squadrats overlay]', e);
+      // Make sure a failed draw never leaves a half-hidden canvas behind.
+      if (canvas) canvas.style.opacity = '1';
+    }
+  }
+
+  function drawInner() {
+    if (!settings.enabled) {
+      status = { state: 'disabled' };
+      return hideCanvas();
+    }
+    const view = readView();
+    if (!view) {
+      status = { state: 'no-view', href: location.href.slice(0, 120) };
+      return hideCanvas();
+    }
     ensureCanvas();
 
     const rect = host === document.body ? { left: 0, top: 0, width: innerWidth, height: innerHeight } : host.getBoundingClientRect();
@@ -144,6 +184,14 @@
     const ox = G.lonToU(view.lon) * S - (w / 2 + (Number(settings.offsetX) || 0));
     const oy = G.latToV(view.lat) * S - (h / 2 + (Number(settings.offsetY) || 0));
 
+    status = {
+      state: 'drawing',
+      zoom: Math.round(z * 100) / 100,
+      host: host === document.body ? 'body (fallback)' : host.tagName.toLowerCase(),
+      canvas: w + 'x' + h,
+      polygons: polys.length,
+      hostConnected: host.isConnected,
+    };
     drawFills(ctx, w, h, S, ox, oy);
     drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRATINHO, settings.gridSquadratinhos, settings.gridColorB, 1);
     drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRAT, settings.gridSquadrats, settings.gridColorA, 2);
@@ -267,6 +315,17 @@
     },
     { passive: true, capture: true }
   );
+
+  try {
+    chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+      if (msg && msg.type === 'sq-status') {
+        reply(Object.assign({ href: location.hostname }, status));
+        return false;
+      }
+    });
+  } catch (e) {
+    /* extension context gone; the tab needs a reload */
+  }
 
   loadAll(() => {
     lastHref = location.href;
