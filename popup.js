@@ -10,7 +10,7 @@
       $(k).checked = !!s[k];
       $(k).addEventListener('change', () => save({ [k]: $(k).checked }));
     }
-    for (const k of ['gridColorMode', 'fillColorMode']) {
+    for (const k of ['gridColorMode', 'fillColorMode', 'fillMode']) {
       $(k).value = s[k];
       $(k).addEventListener('change', () => save({ [k]: $(k).value }));
     }

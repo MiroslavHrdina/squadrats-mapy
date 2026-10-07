@@ -32,6 +32,8 @@
     s.lineOpacity = num(s.lineOpacity, DEFAULTS.lineOpacity, 0.05, 1);
     s.gridColorMode = s.gridColorMode === 'one' ? 'one' : 'two';
     s.fillColorMode = s.fillColorMode === 'one' ? 'one' : 'two';
+    s.fillMode = s.fillMode === 'hatch' ? 'hatch' : 'solid';
+    s.hatchSpacing = num(s.hatchSpacing, DEFAULTS.hatchSpacing, 3, 20);
     s.lineWidth = num(s.lineWidth, DEFAULTS.lineWidth, 0.25, 4);
     s.zoomOffset = num(s.zoomOffset, 0, -5, 5);
     s.offsetX = num(s.offsetX, 0, -2000, 2000);
@@ -237,21 +239,55 @@
     ctx.restore();
   }
 
+  const patternCache = new Map();
+
+  // Diagonal hatch, anchored to the map (not the screen) so it does not swim while panning.
+  // Squadrats hatch "/", squadratinhos "\\", so the two kinds differ even in one colour.
+  function hatchPattern(ctx, color, dir, spacing, ox, oy) {
+    const dpr = window.devicePixelRatio || 1;
+    const P = Math.max(2, Math.round(spacing * dpr));
+    const key = [color, dir, P, dpr].join('|');
+    let pat = patternCache.get(key);
+    if (!pat) {
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = P;
+      const t = tile.getContext('2d');
+      t.strokeStyle = color;
+      t.lineWidth = Math.max(1, dpr);
+      t.beginPath();
+      if (dir === 0) {
+        t.moveTo(-1, P + 1);
+        t.lineTo(P + 1, -1);
+      } else {
+        t.moveTo(-1, -1);
+        t.lineTo(P + 1, P + 1);
+      }
+      t.stroke();
+      pat = ctx.createPattern(tile, 'repeat');
+      patternCache.set(key, pat);
+      if (patternCache.size > 40) patternCache.delete(patternCache.keys().next().value);
+    }
+    const period = P / dpr; // CSS px
+    const mod = (v) => ((v % period) + period) % period;
+    pat.setTransform(new DOMMatrix().translate(-mod(ox), -mod(oy)).scale(1 / dpr));
+    return pat;
+  }
+
   function drawFills(ctx, w, h, S, ox, oy) {
     if (!polys.length) return;
     const want = [settings.fillSquadrats, settings.fillSquadratinhos];
     const colors = settings.fillColorMode === 'one' ? [settings.fillColorA, settings.fillColorA] : [settings.fillColorA, settings.fillColorB];
+    const hatch = settings.fillMode === 'hatch';
     const uMin = ox / S;
     const uMax = (ox + w) / S;
     const vMin = oy / S;
     const vMax = (oy + h) / S;
 
     ctx.save();
-    ctx.globalAlpha = settings.fillOpacity;
     for (let k = 0; k < 2; k++) {
       if (!want[k]) continue;
-      ctx.fillStyle = colors[k];
-      ctx.beginPath(); // batched path for tiny polygons (drawn as small rects)
+      const big = [];
+      const tiny = new Path2D(); // polygons too small for hatching: drawn as little solid rects
       let anyTiny = false;
       for (let i = 0; i < polys.length; i++) {
         const p = polys[i];
@@ -260,20 +296,28 @@
         const bw = (p.maxU - p.minU) * S;
         const bh = (p.maxV - p.minV) * S;
         if (bw < 3 && bh < 3) {
-          ctx.rect(p.minU * S - ox, p.minV * S - oy, Math.max(bw, 1), Math.max(bh, 1));
+          tiny.rect(p.minU * S - ox, p.minV * S - oy, Math.max(bw, 1), Math.max(bh, 1));
           anyTiny = true;
           continue;
         }
-        // Larger polygons: own path, even-odd so holes stay empty.
+        // Larger polygons: even-odd so holes stay empty.
         const path = new Path2D();
         for (const ring of p.rings) {
           path.moveTo(ring[0] * S - ox, ring[1] * S - oy);
           for (let j = 2; j < ring.length; j += 2) path.lineTo(ring[j] * S - ox, ring[j + 1] * S - oy);
           path.closePath();
         }
-        ctx.fill(path, 'evenodd');
+        big.push(path);
       }
-      if (anyTiny) ctx.fill();
+      // Thin hatch lines need more opacity than a flat tint to read equally well.
+      ctx.globalAlpha = hatch ? Math.min(1, settings.fillOpacity + 0.3) : settings.fillOpacity;
+      ctx.fillStyle = hatch ? hatchPattern(ctx, colors[k], k, settings.hatchSpacing, ox, oy) : colors[k];
+      for (const path of big) ctx.fill(path, 'evenodd');
+      if (anyTiny) {
+        ctx.globalAlpha = settings.fillOpacity;
+        ctx.fillStyle = colors[k];
+        ctx.fill(tiny);
+      }
     }
     ctx.restore();
   }

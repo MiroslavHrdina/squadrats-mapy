@@ -215,6 +215,8 @@
     fillColorB: '#f08c00',
     gridColorMode: 'two', // 'two' = one colour per kind, 'one' = single colour
     fillColorMode: 'two',
+    fillMode: 'solid', // 'solid' or 'hatch' (squadrats hatch one way, squadratinhos the other)
+    hatchSpacing: 6, // CSS px between hatch lines
     zoomOffset: 0,
     offsetX: 0,
     offsetY: 0,
