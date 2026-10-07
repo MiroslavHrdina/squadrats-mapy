@@ -212,6 +212,8 @@
     gridColorB: '#1971c2',
     fillColorA: '#2f9e44',
     fillColorB: '#f08c00',
+    gridColorMode: 'two', // 'two' = one colour per kind, 'one' = single colour
+    fillColorMode: 'two',
     zoomOffset: 0,
     offsetX: 0,
     offsetY: 0,

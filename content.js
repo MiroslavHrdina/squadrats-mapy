@@ -30,6 +30,8 @@
     const s = Object.assign({}, DEFAULTS, raw || {});
     s.fillOpacity = num(s.fillOpacity, DEFAULTS.fillOpacity, 0.05, 1);
     s.lineOpacity = num(s.lineOpacity, DEFAULTS.lineOpacity, 0.05, 1);
+    s.gridColorMode = s.gridColorMode === 'one' ? 'one' : 'two';
+    s.fillColorMode = s.fillColorMode === 'one' ? 'one' : 'two';
     s.zoomOffset = num(s.zoomOffset, 0, -5, 5);
     s.offsetX = num(s.offsetX, 0, -2000, 2000);
     s.offsetY = num(s.offsetY, 0, -2000, 2000);
@@ -203,7 +205,7 @@
       hostConnected: host.isConnected,
     };
     drawFills(ctx, w, h, S, ox, oy);
-    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRATINHO, settings.gridSquadratinhos, settings.gridColorB, 1);
+    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRATINHO, settings.gridSquadratinhos, settings.gridColorMode === 'one' ? settings.gridColorA : settings.gridColorB, 1);
     drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRAT, settings.gridSquadrats, settings.gridColorA, 2);
   }
 
@@ -237,7 +239,7 @@
   function drawFills(ctx, w, h, S, ox, oy) {
     if (!polys.length) return;
     const want = [settings.fillSquadrats, settings.fillSquadratinhos];
-    const colors = [settings.fillColorA, settings.fillColorB];
+    const colors = settings.fillColorMode === 'one' ? [settings.fillColorA, settings.fillColorA] : [settings.fillColorA, settings.fillColorB];
     const uMin = ox / S;
     const uMax = (ox + w) / S;
     const vMin = oy / S;

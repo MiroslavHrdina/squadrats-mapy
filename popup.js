@@ -10,6 +10,10 @@
       $(k).checked = !!s[k];
       $(k).addEventListener('change', () => save({ [k]: $(k).checked }));
     }
+    for (const k of ['gridColorMode', 'fillColorMode']) {
+      $(k).value = s[k];
+      $(k).addEventListener('change', () => save({ [k]: $(k).value }));
+    }
     $('fillOpacity').value = s.fillOpacity;
     $('fillOpacity').addEventListener('input', () => save({ fillOpacity: parseFloat($('fillOpacity').value) }));
     $('dA').style.background = s.gridColorA;
