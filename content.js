@@ -47,6 +47,8 @@
   let rafId = 0;
   let lastHref = '';
   let drag = null;
+  let tick = 0;
+  let lastSig = '';
 
   // ---------------------------------------------------------------- storage
 
@@ -99,23 +101,31 @@
     return null;
   }
 
+  function hostOk() {
+    if (!host || !host.isConnected) return false;
+    if (host === document.body) return false; // fallback: keep looking for the real map element
+    const r = host.getBoundingClientRect();
+    return r.width >= innerWidth * 0.6 && r.height >= innerHeight * 0.6;
+  }
+
   function ensureCanvas() {
-    if (canvas && canvas.isConnected && host && host.isConnected) return true;
+    if (canvas && canvas.isConnected && hostOk()) return true;
+    // The map element can be replaced or resized while the page loads, so look again.
     const h = findHost();
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvas.id = 'squadrats-overlay';
       canvas.style.cssText = 'position:fixed;pointer-events:none;left:0;top:0;';
     }
-    host = h;
     if (h) {
+      host = h;
       canvas.style.zIndex = '';
-      h.appendChild(canvas);
+      if (canvas.parentElement !== h) h.appendChild(canvas);
     } else {
       // Fallback: cover the viewport; drawn above everything but never blocks clicks.
       host = document.body;
       canvas.style.zIndex = '2147483000';
-      document.body.appendChild(canvas);
+      if (canvas.parentElement !== document.body) document.body.appendChild(canvas);
     }
     return true;
   }
@@ -273,8 +283,21 @@
     if (location.href !== lastHref) {
       lastHref = location.href;
       schedule();
-    } else if (canvas && host && !canvas.isConnected) {
+    } else if (canvas && !canvas.isConnected) {
       schedule();
+    } else if (settings.enabled && ++tick % 5 === 0 && canvas) {
+      // Every ~0.5 s: has the map element changed size or been replaced?
+      let sig;
+      if (host === document.body) sig = findHost() ? 'found' : 'none';
+      else if (!hostOk()) sig = 'bad';
+      else {
+        const r = host.getBoundingClientRect();
+        sig = r.width + 'x' + r.height;
+      }
+      if (sig !== lastSig) {
+        lastSig = sig;
+        schedule();
+      }
     }
   }, 100);
 
