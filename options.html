@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Squadrats for Mapy.com – settings</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>body { max-width: 640px; margin: 0 auto; padding: 28px 20px 60px; }</style>
+</head>
+<body>
+  <h1>Squadrats for Mapy.com</h1>
+
+  <h2>1. Import your visited tiles</h2>
+  <div class="card">
+    <p>On squadrats.com open the map and use <b>Download KML</b>. Then choose the file here. You can import the squadrats and squadratinhos as one file or as two separate files.</p>
+    <label class="row">
+      <span>This file contains</span>
+      <select id="kind">
+        <option value="-1">Detect automatically</option>
+        <option value="0">Squadrats only (z14)</option>
+        <option value="1">Squadratinhos only (z17)</option>
+      </select>
+    </label>
+    <input type="file" id="file" accept=".kml,.xml,application/vnd.google-earth.kml+xml,text/xml" multiple>
+    <p class="hint">Importing replaces previously imported tiles of the same kind.</p>
+    <button id="import" class="primary" disabled>Import</button>
+    <button id="clear">Remove imported tiles</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <h2>2. Colours</h2>
+  <div class="card">
+    <label class="row"><span>Squadrat grid</span><input type="color" id="gridColorA"></label>
+    <label class="row"><span>Squadratinho grid</span><input type="color" id="gridColorB"></label>
+    <label class="row"><span>Visited squadrats</span><input type="color" id="fillColorA"></label>
+    <label class="row"><span>Visited squadratinhos</span><input type="color" id="fillColorB"></label>
+    <label class="row"><span>Grid line opacity</span><input type="range" id="lineOpacity" min="0.1" max="1" step="0.05"></label>
+    <label class="row"><span>Visited fill opacity</span><input type="range" id="fillOpacity" min="0.05" max="0.9" step="0.05"></label>
+  </div>
+
+  <h2>3. Alignment (only if the grid looks off)</h2>
+  <div class="card">
+    <p>Open a Mapy.com map and compare it with the same place on squadrats.com. If the grid cells are twice or half the expected size, change the zoom offset to <code>-1</code> or <code>1</code> (fractions work too). If the whole grid is shifted by a constant number of pixels, nudge it with the offsets.</p>
+    <label class="row"><span>Zoom offset</span><input type="number" id="zoomOffset" step="0.05"></label>
+    <label class="row"><span>Shift right (px)</span><input type="number" id="offsetX" step="1"></label>
+    <label class="row"><span>Shift down (px)</span><input type="number" id="offsetY" step="1"></label>
+    <button id="reset">Reset all settings</button>
+  </div>
+
+  <script src="geo.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
