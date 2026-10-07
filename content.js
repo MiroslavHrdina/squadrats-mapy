@@ -32,6 +32,7 @@
     s.lineOpacity = num(s.lineOpacity, DEFAULTS.lineOpacity, 0.05, 1);
     s.gridColorMode = s.gridColorMode === 'one' ? 'one' : 'two';
     s.fillColorMode = s.fillColorMode === 'one' ? 'one' : 'two';
+    s.lineWidth = num(s.lineWidth, DEFAULTS.lineWidth, 0.25, 4);
     s.zoomOffset = num(s.zoomOffset, 0, -5, 5);
     s.offsetX = num(s.offsetX, 0, -2000, 2000);
     s.offsetY = num(s.offsetY, 0, -2000, 2000);
@@ -205,8 +206,8 @@
       hostConnected: host.isConnected,
     };
     drawFills(ctx, w, h, S, ox, oy);
-    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRATINHO, settings.gridSquadratinhos, settings.gridColorMode === 'one' ? settings.gridColorA : settings.gridColorB, 1);
-    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRAT, settings.gridSquadrats, settings.gridColorA, 2);
+    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRATINHO, settings.gridSquadratinhos, settings.gridColorMode === 'one' ? settings.gridColorA : settings.gridColorB, Math.max(0.5, settings.lineWidth * 0.5));
+    drawGrid(ctx, w, h, z, ox, oy, G.Z_SQUADRAT, settings.gridSquadrats, settings.gridColorA, settings.lineWidth);
   }
 
   function drawGrid(ctx, w, h, z, ox, oy, tz, on, color, lineWidth) {

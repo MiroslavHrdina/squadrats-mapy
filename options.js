@@ -3,7 +3,7 @@
   const G = SquadratsGeo;
   const D = G.DEFAULTS;
   const $ = (id) => document.getElementById(id);
-  const fields = ['gridColorMode', 'fillColorMode', 'gridColorA', 'gridColorB', 'fillColorA', 'fillColorB', 'lineOpacity', 'fillOpacity', 'zoomOffset', 'offsetX', 'offsetY'];
+  const fields = ['gridColorMode', 'fillColorMode', 'gridColorA', 'gridColorB', 'fillColorA', 'fillColorB', 'lineOpacity', 'lineWidth', 'fillOpacity', 'zoomOffset', 'offsetX', 'offsetY'];
 
   function status(msg, ok) {
     const el = $('status');

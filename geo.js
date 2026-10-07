@@ -207,7 +207,8 @@
     fillSquadrats: true,
     fillSquadratinhos: true,
     fillOpacity: 0.35,
-    lineOpacity: 0.6,
+    lineOpacity: 0.35,
+    lineWidth: 1, // squadrat grid, in CSS px; squadratinhos are drawn half as thick
     gridColorA: '#e8590c',
     gridColorB: '#1971c2',
     fillColorA: '#2f9e44',
